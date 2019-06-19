@@ -28,7 +28,7 @@ public class Main {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        KTable<String, String> addresses = builder
+        KTable<String, String> emails = builder
                 .stream(config.getEmailsTopic(), Consumed.with(jsonSerde, jsonSerde))
                 .filter((key, value) -> value != null && !value.get("after").isNull())
                 .map((key, value) -> KeyValue.pair(value.get("after").get("first_name").asText() + " " + value.get("after").get("last_name").asText(), value.get("after").get("email").asText()))
@@ -37,7 +37,7 @@ public class Main {
                     (aggKey, newValue, aggValue) -> newValue,
                     Materialized.with(Serdes.String(), Serdes.String()));
 
-        KTable<String, String> emails = builder
+        KTable<String, String> addresses = builder
                 .stream(config.getAddressTopic(), Consumed.with(Serdes.String(), jsonSerde))
                 .filter((key, value) -> value != null)
                 .map((key, value) -> KeyValue.pair(value.get("name").asText(), value.get("address").asText()))
@@ -46,8 +46,9 @@ public class Main {
                         (aggKey, newValue, aggValue) -> newValue,
                         Materialized.with(Serdes.String(), Serdes.String()));
 
-        addresses.outerJoin(emails, (leftValue, rightValue) -> leftValue + " / " + rightValue)
+        emails.outerJoin(addresses, (leftValue, rightValue) -> "{\"email\":\"" + leftValue + "\",\"address\": \"" + rightValue + "\"}")
                 .toStream()
+                .map((key, value) -> KeyValue.pair("{\"name\":\"" + key + "\"}", value))
                 .to(config.getEmailAndAddressTopic(), Produced.with(Serdes.String(), Serdes.String()));
 
         KafkaStreams streams = new KafkaStreams(builder.build(), kafkaStreamsConfig);

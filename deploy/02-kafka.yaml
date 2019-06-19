@@ -23,22 +23,6 @@ spec:
       tls:
         authentication:
           type: tls
-        networkPolicyPeers:
-          - podSelector:
-              matchLabels:
-                app: my-connect-cluster
-          - podSelector:
-              matchLabels:
-                app: ui-price-viewer
-          - podSelector:
-              matchLabels:
-                app: ui-trade-manager
-          - podSelector:
-              matchLabels:
-                app: ui-portfolio-viewer
-          - podSelector:
-              matchLabels:
-                app: pricer
       external:
         type: route
         authentication:

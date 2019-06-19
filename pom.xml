@@ -23,9 +23,7 @@
     <modules>
         <module>kafka-as-a-storage</module>
         <module>debezium-cdc/service</module>
-        <module>debezium-cdc/watcher</module>
         <module>transform-and-aggregate</module>
-        <module>email-and-address</module>
     </modules>
 
 

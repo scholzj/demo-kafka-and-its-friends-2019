@@ -1,0 +1,8 @@
+{
+    "name": "my-client2",
+    "format": "json",
+    "auto.offset.reset": "earliest",
+    "enable.auto.commit": "true",
+    "fetch.min.bytes": "512",
+    "consumer.request.timeout.ms": "30000"
+}

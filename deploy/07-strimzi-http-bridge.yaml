@@ -1,0 +1,82 @@
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaUser
+metadata:
+  name: my-bridge
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+    - resource:
+        type: topic
+        name: dbserver1.inventory.customers
+      operation: Describe
+    - resource:
+        type: topic
+        name: dbserver1.inventory.customers
+      operation: Read
+    - resource:
+        type: topic
+        name: email-and-address
+      operation: Describe
+    - resource:
+        type: topic
+        name: email-and-address
+      operation: Read
+    - resource:
+        type: group
+        name: my-bridge
+        patternType: prefix
+      operation: Read
+---
+
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaBridge
+metadata:
+  name: my-bridge
+  labels:
+    app: my-bridge
+spec:
+  replicas: 1
+  bootstrapServers: my-cluster-kafka-bootstrap:9093
+  http:
+    port: 8080
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 250m
+  tls:
+    trustedCertificates:
+    - secretName: my-cluster-cluster-ca-cert
+      certificate: ca.crt
+  authentication:
+    type: tls
+    certificateAndKey:
+      secretName: my-bridge
+      certificate: user.crt
+      key: user.key
+  logging:
+    loggers:
+      rootLogger.level: INFO
+    type: inline
+---
+
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: my-bridge
+  labels:
+    app: my-bridge
+spec:
+  port:
+    targetPort: 8080
+  to:
+    kind: Service
+    name: my-bridge-bridge-service
+    weight: 100
