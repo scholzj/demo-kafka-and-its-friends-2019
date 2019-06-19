@@ -1,0 +1,74 @@
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaUser
+metadata:
+  name: db-change-watcher
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+    - resource:
+        type: topic
+        name: dbserver1.inventory.customers
+      operation: Write
+    - resource:
+        type: topic
+        name: dbserver1.inventory.customers
+      operation: Create
+    - resource:
+        type: topic
+        name: dbserver1.inventory.customers
+      operation: Describe
+    - resource:
+        type: topic
+        name: dbserver1.inventory.customers
+      operation: Read
+    - resource:
+        type: group
+        name: db-change-watcher
+        patternType: prefix
+      operation: Read
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: db-change-watcher
+  name: db-change-watcher
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-change-watcher
+    spec:
+      containers:
+      - name: cdc-demo-watcher
+        image: quay.io/scholzj/demo-kafka-and-its-friends-2019:cdc-debezium-watcher
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: CA_CRT
+            valueFrom:
+              secretKeyRef:
+                name: my-cluster-cluster-ca-cert
+                key: ca.crt
+          - name: USER_CRT
+            valueFrom:
+              secretKeyRef:
+                name: db-change-watcher
+                key: user.crt
+          - name: USER_KEY
+            valueFrom:
+              secretKeyRef:
+                name: db-change-watcher
+                key: user.key
+          - name: BOOTSTRAP_SERVERS
+            value: my-cluster-kafka-bootstrap:9093
+          - name: TOPIC
+            value: dbserver1.inventory.customers
+          - name: GROUP_ID
+            value: db-change-watcher

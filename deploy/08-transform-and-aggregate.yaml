@@ -1,0 +1,120 @@
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaTopic
+metadata:
+  name: email-and-address
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    cleanup.policy: compact
+    retention.bytes: 107374182
+    retention.ms: 86400000
+    segment.bytes: 107374182
+---
+
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaUser
+metadata:
+  name: transform-and-aggregate
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+    - resource:
+        type: topic
+        name: email-and-address
+      operation: Write
+    - resource:
+        type: topic
+        name: email-and-address
+      operation: Describe
+    - resource:
+        type: topic
+        name: dbserver1.inventory.customers
+      operation: Read
+    - resource:
+        type: topic
+        name: dbserver1.inventory.customers
+      operation: Describe
+    - resource:
+        type: topic
+        name: kafka-address-book
+      operation: Read
+    - resource:
+        type: topic
+        name: kafka-address-book
+      operation: Describe
+    - resource:
+        type: topic
+        name: transform-and-aggregate
+        patternType: prefix
+      operation: Write
+    - resource:
+        type: topic
+        name: transform-and-aggregate
+        patternType: prefix
+      operation: Create
+    - resource:
+        type: topic
+        name: transform-and-aggregate
+        patternType: prefix
+      operation: Read
+    - resource:
+        type: topic
+        name: transform-and-aggregate
+        patternType: prefix
+      operation: Describe
+    - resource:
+        type: group
+        name: transform-and-aggregate
+        patternType: prefix
+      operation: Read
+---
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: transform-and-aggregate
+  name: transform-and-aggregate
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: transform-and-aggregate
+    spec:
+      containers:
+      - name: transform-and-aggregate
+        image: quay.io/scholzj/demo-kafka-and-its-friends-2019:transform-and-aggregate
+        env:
+        - name: CA_CRT
+          valueFrom:
+            secretKeyRef:
+              name: my-cluster-cluster-ca-cert
+              key: ca.crt
+        - name: USER_CRT
+          valueFrom:
+            secretKeyRef:
+              name: transform-and-aggregate
+              key: user.crt
+        - name: USER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transform-and-aggregate
+              key: user.key
+        - name: BOOTSTRAP_SERVERS
+          value: my-cluster-kafka-bootstrap:9093
+        - name: LEFT_SOURCE_TOPIC
+          value: dbserver1.inventory.customers
+        - name: RIGHT_SOURCE_TOPIC
+          value: kafka-address-book
+        - name: TARGET_TOPIC
+          value: email-and-address
+---

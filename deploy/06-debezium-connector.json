@@ -1,0 +1,29 @@
+{
+  "name": "debezium-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+    "tasks.max": "1",
+    "database.hostname": "mysql",
+    "database.port": "3306",
+    "database.user": "debezium",
+    "database.password": "dbz",
+    "database.server.id": "184054",
+    "database.server.name": "dbserver1",
+    "database.whitelist": "inventory",
+    "table.whitelist": "inventory.customers",
+    "database.history.kafka.bootstrap.servers": "my-cluster-kafka-bootstrap:9093",
+    "database.history.kafka.topic": "schema-changes.inventory",
+    "database.history.producer.security.protocol": "SSL",
+    "database.history.producer.ssl.truststore.type": "PKCS12",
+    "database.history.producer.ssl.truststore.location": "/tmp/kafka/cluster.truststore.p12",
+    "database.history.producer.ssl.truststore.password": "${file:/tmp/strimzi-connect.properties:ssl.truststore.password}",
+    "database.history.producer.ssl.keystore.location": "/tmp/kafka/cluster.keystore.p12",
+    "database.history.producer.ssl.keystore.password": "${file:/tmp/strimzi-connect.properties:ssl.keystore.password}",
+    "database.history.consumer.security.protocol": "SSL",
+    "database.history.consumer.ssl.truststore.type": "PKCS12",
+    "database.history.consumer.ssl.truststore.location": "/tmp/kafka/cluster.truststore.p12",
+    "database.history.consumer.ssl.truststore.password": "${file:/tmp/strimzi-connect.properties:ssl.truststore.password}",
+    "database.history.consumer.ssl.keystore.location": "/tmp/kafka/cluster.keystore.p12",
+    "database.history.consumer.ssl.keystore.password": "${file:/tmp/strimzi-connect.properties:ssl.keystore.password}"
+  }
+}

@@ -1,0 +1,110 @@
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: kafka-address-book
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    cleanup.policy: compact
+    min.cleanable.dirty.ratio: 0.0
+    segment.bytes: 10485760
+---
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaUser
+metadata:
+  name: kafka-address-book
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: kafka-address-book
+        operation: Write
+      - resource:
+          type: topic
+          name: kafka-address-book
+        operation: Create
+      - resource:
+          type: topic
+          name: kafka-address-book
+        operation: Describe
+      - resource:
+          type: topic
+          name: kafka-address-book
+        operation: Read
+      - resource:
+          type: group
+          name: kafka-address-book
+          patternType: prefix
+        operation: Read
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: kafka-address-book
+  name: kafka-address-book
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kafka-address-book
+    spec:
+      containers:
+      - name: kafka-address-book
+        image: quay.io/scholzj/demo-kafka-and-its-friends-2019:kafka-address-book-service
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: CA_CRT
+            valueFrom:
+              secretKeyRef:
+                name: my-cluster-cluster-ca-cert
+                key: ca.crt
+          - name: USER_CRT
+            valueFrom:
+              secretKeyRef:
+                name: kafka-address-book
+                key: user.crt
+          - name: USER_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kafka-address-book
+                key: user.key
+          - name: KAFKA_BOOTSTRAP_SERVER
+            value: my-cluster-kafka-bootstrap:9093
+          - name: KAFKA_TOPIC
+            value: kafka-address-book
+          - name: KAFKA_GROUP_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kafka-address-book
+spec:
+  selector:
+    app: kafka-address-book
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Route
+metadata:
+  name: kafka-address-book
+spec:
+  to:
+    kind: Service
+    name: kafka-address-book
